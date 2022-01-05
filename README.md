@@ -9,7 +9,7 @@
 
 1. 创建 app
 
-### 目前请克隆该代码仓库
+> 目前请克隆该代码仓库,并执行pip install -r rquirements.txt
 
 ```python
 
