@@ -117,11 +117,11 @@ class BLiver:
 
     @property
     def ws(self):
-        assert self._ws
+        assert self._ws is not None
         return self._ws
 
     async def heartbeat(self):
-        assert self._ws
+        assert self._ws is not None
         await self._ws.send_bytes(packman.pack(heartbeat(), Operation.HEARTBEAT))
         self.logger.debug("heartbeat sended")
 
