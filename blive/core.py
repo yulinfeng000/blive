@@ -55,7 +55,7 @@ def get_blive_dm_history(roomid):
     return resp.json()
 
 
-def certification(roomid, token, uid=0, protover=3, platform="web"):
+def certification(roomid, token, uid=0, protover=1, platform="web"):
     return {
         "uid": uid,
         "roomid": roomid,

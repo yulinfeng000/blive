@@ -5,14 +5,17 @@
 - 简单，只需房间号即可监听
 - 异步，io 不阻塞，及时获取消息
 
+## B 站直播弹幕 websocket 协议分析
+
+[PROTOCOL 分析](./PROTOCOL.md)
+
 ## 快速开始
 
 1. 创建 app
 
-> 目前请克隆该代码仓库,并执行pip install -r rquirements.txt
+> 目前请克隆该代码仓库,并执行 pip install -r rquirements.txt
 
 ```python
-
 from blive import  BLiver
 
 app = BLiver(123) #123为房间号
@@ -21,19 +24,17 @@ app = BLiver(123) #123为房间号
 2. 创建处理器
 
 ```python
-
 from blive import  BLiver, Events, BLiverCtx
 
 app = BLiver(123)
 
-# 标记该方法监听弹幕消息,更多消息类型请参考Events类源代码
+# 标记该方法监听弹幕消息,更多消息类型请参考 Events 类源代码
 @app.on(Events.DANMU_MSG)
 async def listen_danmu(ctx: BLiverCtx):
-    danmu = DanMuMsg(ctx.body) #ctx.body套上相应的消息操作类即可得到消息的基本内容,也可直接操作ctx.body
-    print(danmu.content())
-    print(danmu.sender())
-    print(danmu.timestamp())
-
+danmu = DanMuMsg(ctx.body) #ctx.body 套上相应的消息操作类即可得到消息的基本内容,也可直接操作 ctx.body
+print(danmu.content)
+print(danmu.sender)
+print(danmu.timestamp)
 ```
 
 3. 运行
@@ -46,11 +47,11 @@ app = BLiver(123)
 @app.on(Events.DANMU_MSG)
 async def listen_danmu(ctx: BLiverCtx):
     danmu = DanMuMsg(ctx.body)
-    print(danmu.content())
-    print(danmu.sender())
-    print(danmu.timestamp())
+    print(danmu.content)
+    print(danmu.sender)
+    print(danmu.timestamp)
 
-app.run() # 运行代码!
+app.run() # 运行app!
 
 ```
 
