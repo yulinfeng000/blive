@@ -1,7 +1,7 @@
 import sys
 import json
 import asyncio
-from typing import Dict, Tuple
+from typing import Dict, List, Tuple, Union
 import aiohttp
 from aiohttp.client_ws import ClientWebSocketResponse
 from aiohttp.http_websocket import WSMessage
@@ -13,7 +13,7 @@ from .core import (
     Operation,
     PackageHeader,
     packman,
-    get_blive_room_id,
+    get_blive_room_info,
     get_blive_ws_url,
     certification,
     heartbeat,
@@ -55,20 +55,25 @@ class Processor:
 class BLiver:
     def __init__(self, roomid, logger=None, log_level="INFO"):
         self.roomid = roomid
+        self.real_roomid, self.uname = get_blive_room_info(roomid)
         if not logger:
             self.logger = loguru.logger
             self.logger.remove()
+            self.logger.add(sys.stderr, level=log_level)
         else:
             self.logger = logger
-        self.logger.add(sys.stderr, level=log_level)
         self._ws: ClientWebSocketResponse = None
         self.scheduler = AsyncIOScheduler(timezone="Asia/ShangHai")
         self.processor = Processor(logger=self.logger)
 
-    def handler(self, event: Events):
+    def on(self, event: Union[Events, List[Events]]):
         def f_wrapper(func):
-            self.logger.debug("handler added")
-            self.processor.register(event, func)
+            self.logger.debug("handler added,{}", func)
+            if isinstance(event, list):
+                for e in event:
+                    self.processor.register(e, func)
+            else:
+                self.processor.register(event, func)
             return func
 
         return f_wrapper
@@ -121,22 +126,20 @@ class BLiver:
         self.logger.debug("heartbeat sended")
 
     async def listen(self):
-        rommid, _, _ = get_blive_room_id(self.roomid)  # 如果是短id,就得到直播间真实id
-        url, token = get_blive_ws_url(rommid)
+
+        url, token = get_blive_ws_url(self.real_roomid)
         async with aiohttp.ClientSession().ws_connect(url) as ws:
             self._ws = ws
             await ws.send_bytes(
-                packman.pack(certification(rommid, token), Operation.AUTH)
+                packman.pack(certification(self.real_roomid, token), Operation.AUTH)
             )
             self.scheduler.add_job(self.heartbeat, trigger="interval", seconds=30)
             self.scheduler.start()
             # 开始监听
             while True:
                 msg: WSMessage = await ws.receive()
-                # print(msg)
                 if msg.type != aiohttp.WSMsgType.BINARY:
                     continue
-                # print(msg.data)
                 mq = packman.unpack(msg.data)
                 self.logger.debug("received msg:\n{}", mq)
                 tasks = [self.processor.process(BLiverCtx(self, m)) for m in mq]

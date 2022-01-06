@@ -21,7 +21,7 @@ def get_blive_ws_url(roomid, ssl=False):
     return url, data["data"]["token"]
 
 
-def get_blive_room_id(roomid):
+def get_blive_room_info(roomid):
     """
     得到b站直播间id,（短id不是真实的id）
 
@@ -34,8 +34,7 @@ def get_blive_room_id(roomid):
     data = resp.json()
     return (
         data["data"]["room_info"]["room_id"],
-        data["data"]["room_info"]["short_id"],
-        data["data"]["room_info"]["uid"],
+        data["data"]["anchor_info"]["base_info"]["uname"],
     )
 
 
@@ -81,7 +80,7 @@ class AuthReplyCode(enum.IntEnum):
 class ProtocolVersion(enum.IntEnum):
     NORMAL = 0  # 未压缩
     HEARTBEAT = 1  # 心跳
-    INFLATE = 2  # zlib压缩
+    DEFLATE = 2  # zlib压缩
     BROTLI = 3  # brotil 压缩
 
 
@@ -152,7 +151,6 @@ class B_MsgPackage:
         if header.operation == Operation.HEARTBEAT_REPLY:
             # 心跳不会粘包
             packages.append((header, data[4:].decode("utf-8")))
-            
 
         # 通知包处理
         elif header.operation == Operation.NOTIFY:
@@ -182,7 +180,7 @@ class B_MsgPackage:
                     packages.append((header, data[16:].decode("utf-8")))
 
             # NOTIFY 消息可能会粘包
-            if header.version == ProtocolVersion.INFLATE:
+            if header.version == ProtocolVersion.DEFLATE:
                 # 先zlib解码
                 data = zlib.decompress(data)
                 notify_pk_process(data)
@@ -213,7 +211,7 @@ class Events(str, enum.Enum):
     ROOM_CHANGE = "ROOM_CHANGE"  # 房间信息改变
     ROOM_RANK = "ROOM_RANK"  # 排名改变
     DANMU_MSG = "DANMU_MSG"  # 接收到弹幕【自动回复】
-    SEND_GIFT = "ROOM_RANK"  # 有人送礼【答谢送礼】
+    SEND_GIFT = "SEND_GIFT"  # 有人送礼【答谢送礼】
     WELCOME_GUARD = "WELCOME_GUARD"  # 舰长进入（不会触发）
     ENTRY_EFFECT = "ENTRY_EFFECT"  # 舰长、高能榜、老爷进入【欢迎舰长】
     WELCOME = "WELCOME"  # 老爷进入
@@ -222,7 +220,7 @@ class Events(str, enum.Enum):
     SHARE = "SHARE"  # 用户分享直播间
     SPECIAL_ATTENTION = "SPECIAL_ATTENTION"  # 特别关注直播间，可用%special%判断
     ROOM_REAL_TIME_MESSAGE_UPDATE = "ROOM_REAL_TIME_MESSAGE_UPDATE"  # 粉丝数量改变
-    SUPER_CHAT_MESSAGE = "ROOM_REAL_TIME_MESSAGE_UPDATE"  # 醒目留言
+    SUPER_CHAT_MESSAGE = "SUPER_CHAT_MESSAGE"  # 醒目留言
     SUPER_CHAT_MESSAGE_JPN = "SUPER_CHAT_MESSAGE_JPN"  # 醒目留言日文翻译
     SUPER_CHAT_MESSAGE_DELETE = "SUPER_CHAT_MESSAGE_DELETE"  # 删除醒目留言
     ROOM_BLOCK_MSG = "ROOM_BLOCK_MSG"  # 用户被禁言，%uname%昵称
@@ -254,3 +252,10 @@ class Events(str, enum.Enum):
     # 勋章升级，仅送礼物后触发，需设置中开启“监听勋章升级”。%medal_level%获取新等级（但用户当前勋章不一定是本直播间）
     MEDAL_UPGRADE = "MEDAL_UPGRADE"
     STOP_LIVE_ROOM_LIST = "STOP_LIVE_ROOM_LIST"  # 停止直播的房间
+    WIDGET_BANNER = "WIDGET_BANNER"  # 小部件横幅
+    PK_BATTLE_PROCESS_NEW = "PK_BATTLE_PROCESS_NEW"  # 开始pk
+    PK_BATTLE_PROCESS = "PK_BATTLE_PROCESS"  # pk
+    COMMON_NOTICE_DANMAKU = "COMMON_NOTICE_DANMAKU"  # 弹幕通知
+    HOT_RANK_CHANGED_V2 = "HOT_RANK_CHANGED_V2"  # 热门榜改变v2
+    PK_BATTLE_SETTLE = "PK_BATTLE_SETTLE"  # pk结果
+    PK_BATTLE_PRE_NEW = "PK_BATTLE_PRE_NEW"  # pk预创建
