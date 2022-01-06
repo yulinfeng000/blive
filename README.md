@@ -27,7 +27,7 @@ from blive import  BLiver, Events, BLiverCtx
 app = BLiver(123)
 
 # 标记该方法监听弹幕消息,更多消息类型请参考Events类源代码
-@app.handler(Events.DANMU_MSG)
+@app.on(Events.DANMU_MSG)
 async def listen_danmu(ctx: BLiverCtx):
     danmu = DanMuMsg(ctx.body) #ctx.body套上相应的消息操作类即可得到消息的基本内容,也可直接操作ctx.body
     print(danmu.content())
@@ -43,7 +43,7 @@ async def listen_danmu(ctx: BLiverCtx):
 from blive import  BLiver, Events, BLiverCtx
 
 app = BLiver(123)
-@app.handler(Events.DANMU_MSG)
+@app.on(Events.DANMU_MSG)
 async def listen_danmu(ctx: BLiverCtx):
     danmu = DanMuMsg(ctx.body)
     print(danmu.content())
