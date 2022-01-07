@@ -1,7 +1,7 @@
 from blive import BLiver, Events, BLiverCtx
 from blive.msg import DanMuMsg, HotRankChangeV2Msg, InteractWordMsg, SendGiftMsg
 
-app = BLiver(22820500)
+app = BLiver(22820500,log_level="DEBUG")
 
 
 @app.on(Events.DANMU_MSG)

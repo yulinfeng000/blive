@@ -125,7 +125,9 @@ PackageHeader = namedtuple(
 HeaderStruct = struct.Struct(">I2H2I")
 
 
-class B_MsgPackage:
+class BWS_MsgPackage:
+    """bilibili websocket message package"""
+
     def __init__(self) -> None:
         self.sequence = Counter(0)
 
@@ -143,55 +145,56 @@ class B_MsgPackage:
         return header + body
 
     def unpack(self, data) -> list:
-        packages = []
-        header = PackageHeader(*HeaderStruct.unpack(data[:16]))  #
-        data = data[header.header_size :]
+        packages = []  # 装处理好的数据包用
+        header = PackageHeader(*HeaderStruct.unpack(data[:16]))  # 读取数据包的头部
+        data = data[16:]  # 读取数据包的数据段
 
         # 心跳包处理
         if header.operation == Operation.HEARTBEAT_REPLY:
-            # 心跳不会粘包
+            # 心跳不会粘包,前4位有不明含义的数据
             packages.append((header, data[4:].decode("utf-8")))
 
         # 通知包处理
         elif header.operation == Operation.NOTIFY:
 
-            def notify_pk_process(data):
-                # 粘包处理代码 ,抽取为公共函数
-                header = PackageHeader(*HeaderStruct.unpack(data[:16]))  # 包头
-                if len(data) > header.package_size:  # 如果数据大小大于包头，说明是粘包
+            def zipped_notify_pkg_process(data):  # 解压后的包处理代码 ,抽取为公共函数, data: 解压后的原始数据
+                header = PackageHeader(*HeaderStruct.unpack(data[:16]))  # 读取包头
+                if len(data) > header.package_size:  # 如果数据大小大于包头声明的大小，说明是粘包
                     while True:
-                        # 先把第一个包放进去
+                        # 先把第一个包放进去 / 放入包
                         packages.append(
                             (header, data[16 : header.package_size].decode("utf-8"))
                         )
                         # 移动到下一个包
                         data = data[header.package_size :]
+                        # 读取下一个包的包头
                         header = PackageHeader(*HeaderStruct.unpack(data[:16]))
-
                         if len(data) > header.package_size:
-                            # 如果数据还大于package，说明还有1个以上的包
+                            # 如果数据还大于声明的package_size，说明还有1个以上的包
                             continue
                         else:
+                            # 剩下的数据刚好就是一个包,直接放，然后退出循环
                             packages.append(
                                 (header, data[16:].decode("utf-8"))
                             )  # 直接放第二个包
                             break
                 else:
+                    # 如果数据大小不大于包头声明的大小,说明是单个包太大压缩的。直接放入
                     packages.append((header, data[16:].decode("utf-8")))
 
             # NOTIFY 消息可能会粘包
             if header.version == ProtocolVersion.DEFLATE:
-                # 先zlib解码
+                # 先zlib解码，拆包
                 data = zlib.decompress(data)
-                notify_pk_process(data)
+                zipped_notify_pkg_process(data)
 
             elif header.version == ProtocolVersion.BROTLI:
-                # 与zlib 逻辑相同，先解码，然后数据可能要拆包
+                # 与 zlib 逻辑相同，先解码，然后数据可能要拆包
                 data = brotli.decompress(data)
-                notify_pk_process(data)
+                zipped_notify_pkg_process(data)
 
             elif header.version == ProtocolVersion.NORMAL:
-                # normal 直接decode，feature
+                # normal 直接decode
                 packages.append((header, data.decode("utf-8")))
             else:
                 # TODO 抛出错误或者打印日志
@@ -201,9 +204,6 @@ class B_MsgPackage:
             packages.append((header, data.decode("utf-8")))
 
         return packages
-
-
-packman = B_MsgPackage()
 
 
 class Events(str, enum.Enum):

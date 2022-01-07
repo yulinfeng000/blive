@@ -1,6 +1,7 @@
 import sys
 import json
 import asyncio
+from contextvars import ContextVar
 from abc import ABC, abstractmethod
 from typing import Awaitable, Dict, List, Tuple, Union
 import aiohttp
@@ -10,10 +11,10 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 import loguru
 from apscheduler.util import _Undefined
 from .core import (
+    BWS_MsgPackage,
     Events,
     Operation,
     PackageHeader,
-    packman,
     get_blive_room_info,
     get_blive_ws_url,
     certification,
@@ -22,6 +23,8 @@ from .core import (
 
 
 undefined = _Undefined()
+
+packman = BWS_MsgPackage()
 
 
 class BLiverCtx(object):
