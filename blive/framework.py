@@ -11,7 +11,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 import loguru
 from apscheduler.util import _Undefined
 from .core import (
-    BWS_MsgPackage,
+    packman,
     Events,
     Operation,
     PackageHeader,
@@ -23,8 +23,6 @@ from .core import (
 
 
 undefined = _Undefined()
-
-packman = BWS_MsgPackage()
 
 
 class BLiverCtx(object):

@@ -206,6 +206,9 @@ class BWS_MsgPackage:
         return packages
 
 
+packman = BWS_MsgPackage()
+
+
 class Events(str, enum.Enum):
     PREPARING = "PREPARING"  # 下播【结束语】
     ROOM_CHANGE = "ROOM_CHANGE"  # 房间信息改变
