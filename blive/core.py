@@ -8,9 +8,10 @@ import brotli
 import zlib
 
 
-def get_blive_ws_url(roomid, ssl=False):
+def get_blive_ws_url(roomid, ssl=True, platform="pc", player="web"):
     resp = requests.get(
-        f"https://api.live.bilibili.com/room/v1/Danmu/getConf?room_id={roomid}&platform=pc&player=web"
+        f"https://api.live.bilibili.com/room/v1/Danmu/getConf",
+        params={"room_id": roomid, "platform": platform, "player": player},
     )
     data = resp.json()
     url_obj = data["data"]["host_server_list"][1]
@@ -25,7 +26,7 @@ def get_blive_room_info(roomid):
     """
     得到b站直播间id,（短id不是真实的id）
 
-    Return: ture_id,short_id,up_id
+    Return: true_room_id,up_name
     """
     resp = requests.get(
         "https://api.live.bilibili.com/xlive/web-room/v1/index/getInfoByRoom",
