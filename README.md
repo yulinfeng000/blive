@@ -13,47 +13,48 @@
 
 1. 创建 app
 
-> 目前请克隆该代码仓库,并执行 pip install -r rquirements.txt
+   > 目前请克隆该代码仓库,并执行 pip install -r rquirements.txt
 
-```python
-from blive import  BLiver
+   ```python
+   from blive import  BLiver
 
-app = BLiver(123) #123为房间号
-```
+   app = BLiver(123) #123为房间号
+   ```
 
 2. 创建处理器
 
-```python
-from blive import  BLiver, Events, BLiverCtx
+   ```python
+   from blive import  BLiver, Events, BLiverCtx
 
-app = BLiver(123)
+   app = BLiver(123)
 
-# 标记该方法监听弹幕消息,更多消息类型请参考 Events 类源代码
-@app.on(Events.DANMU_MSG)
-async def listen_danmu(ctx: BLiverCtx):
-danmu = DanMuMsg(ctx.body) #ctx.body 套上相应的消息操作类即可得到消息的基本内容,也可直接操作 ctx.body
-print(danmu.content)
-print(danmu.sender)
-print(danmu.timestamp)
-```
+   # 标记该方法监听弹幕消息,更多消息类型请参考 Events 类源代码
+   @app.on(Events.DANMU_MSG)
+   async def listen_danmu(ctx: BLiverCtx):
+       danmu = DanMuMsg(ctx.body) #ctx.body 套上相应的消息操作类即可得到消息的基本内容,也可直接操作 ctx.body
+       print(danmu.content)
+       print(danmu.sender)
+       print(danmu.timestamp)
+   ```
 
 3. 运行
 
-```python
+   ```python
 
-from blive import  BLiver, Events, BLiverCtx
+   from blive import  BLiver, Events, BLiverCtx
 
-app = BLiver(123)
-@app.on(Events.DANMU_MSG)
-async def listen_danmu(ctx: BLiverCtx):
-    danmu = DanMuMsg(ctx.body)
-    print(danmu.content)
-    print(danmu.sender)
-    print(danmu.timestamp)
+   app = BLiver(123)
 
-app.run() # 运行app!
+   @app.on(Events.DANMU_MSG)
+   async def listen_danmu(ctx: BLiverCtx):
+       danmu = DanMuMsg(ctx.body)
+       print(danmu.content)
+       print(danmu.sender)
+       print(danmu.timestamp)
 
-```
+   app.run() # 运行app!
+
+   ```
 
 ## 项目简介
 
