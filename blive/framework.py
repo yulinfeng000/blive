@@ -2,12 +2,13 @@ import sys
 import json
 import asyncio
 from typing import Awaitable, Dict, List, Tuple, Union
+import loguru
 import aiohttp
 from aiohttp.client_ws import ClientWebSocketResponse
 from aiohttp.http_websocket import WSMessage
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
-import loguru
 from apscheduler.util import _Undefined
+
 from .core import (
     packman,
     Events,
@@ -42,6 +43,9 @@ class Channel:
 
     def register_handler(self, handler):
         self.listeners.append(handler)
+
+    def __getitem__(self, idx):
+        return self.listeners.__getitem__(idx)
 
     def __iter__(self):
         return iter(self.listeners)

@@ -1,7 +1,13 @@
 from blive import BLiver, Events, BLiverCtx
-from blive.msg import DanMuMsg, HotRankChangeV2Msg, InteractWordMsg, SendGiftMsg
+from blive.msg import (
+    DanMuMsg,
+    HotRankChangeV2Msg,
+    InteractWordMsg,
+    SendGiftMsg,
+    SuperChatMsg,
+)
 
-app = BLiver(510)
+app = BLiver(605)
 
 
 @app.on(Events.DANMU_MSG)
@@ -24,7 +30,12 @@ async def listen_join(ctx: BLiverCtx):
 
 @app.on(Events.SUPER_CHAT_MESSAGE)
 async def listen_sc(ctx: BLiverCtx):
-    print(ctx.body)
+    msg = SuperChatMsg(ctx.body)
+    print(msg.sender)
+    print(msg.content)
+    print(msg.start_time)
+    print(msg.time)
+    print(msg.price)
 
 
 @app.on(Events.SEND_GIFT)

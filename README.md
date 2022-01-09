@@ -11,9 +11,11 @@
 
 ## 快速开始
 
-1. 创建 app
+1. 安装
 
-   > 目前请克隆该代码仓库,并执行 pip install -r rquirements.txt
+   `pip install blive`
+
+2. 创建 app
 
    ```python
    from blive import  BLiver
@@ -21,7 +23,7 @@
    app = BLiver(123) #123为房间号
    ```
 
-2. 创建处理器
+3. 创建处理器
 
    ```python
    from blive import  BLiver, Events, BLiverCtx
@@ -37,7 +39,7 @@
        print(danmu.timestamp)
    ```
 
-3. 运行
+4. 运行
 
    ```python
 

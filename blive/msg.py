@@ -136,3 +136,35 @@ class SendGiftMsg(BaseMsg):
             "combo_stay_time": self.body["data"]["combo_stay_time"],
             "combo_total_coin": self.body["data"]["combo_total_coin"],
         }
+
+
+class SuperChatMsg(BaseMsg):
+    def __init__(self, body) -> None:
+        super().__init__(body)
+
+    @property
+    def content(self):
+        return self.body["data"]["message"]
+
+    @property
+    def sender(self):
+        return {
+            "id": self.body["data"]["user_info"]["uname"],
+            "name": self.body["data"]["uid"],
+            "medal": {
+                "medal_name": self.body["data"]["medal_info"]["medal_name"],
+                "medal_level": self.body["data"]["medal_info"]["medal_level"],
+            },
+        }
+
+    @property
+    def price(self):
+        return self.body["data"]["price"]
+
+    @property
+    def start_time(self):
+        return self.body["data"]["start_time"]
+
+    @property
+    def time(self):
+        return self.body["data"]["time"]
