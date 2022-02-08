@@ -211,6 +211,7 @@ packman = BWS_MsgPackage()
 
 
 class Events(str, enum.Enum):
+    LIVE = "LIVE"  # 主播开播
     PREPARING = "PREPARING"  # 下播【结束语】
     ROOM_CHANGE = "ROOM_CHANGE"  # 房间信息改变
     ROOM_RANK = "ROOM_RANK"  # 排名改变

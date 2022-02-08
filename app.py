@@ -14,7 +14,7 @@ app = BLiver(605)
 async def listen(ctx: BLiverCtx):
     danmu = DanMuMsg(ctx.body)
     print(
-        f"\n{danmu.sender['name']}({danmu.sender['medal']['medal_name']}:{danmu.sender['medal']['medal_level']}): \"{danmu.content}\"\n "
+        f"\n{danmu.sender['name']}({danmu.sender['medal']['medal_name']}:{danmu.sender['medal']['medal_level']}): \"{danmu.content}\"\n"
     )
 
 

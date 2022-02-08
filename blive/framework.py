@@ -97,6 +97,9 @@ class BLiver:
 
         return f_wrapper
 
+    def register_handler(self, event: Union[Events, List[Events]], handler):
+        self.processor.register(event, handler)
+
     def scheduled(
         self,
         trigger,
@@ -171,3 +174,7 @@ class BLiver:
         loop = asyncio.get_event_loop()
         loop.create_task(self.listen())
         loop.run_forever()
+
+    def run_as_task(self):
+        loop = asyncio.get_event_loop()
+        return loop.create_task(self.listen())
