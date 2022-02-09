@@ -4,3 +4,4 @@
 dist
 build
 blive.egg-info
+test.py

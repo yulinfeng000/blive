@@ -1,3 +1,4 @@
+import asyncio
 from collections import namedtuple
 from multiprocessing import RawValue, Lock
 import json
@@ -94,28 +95,37 @@ class Operation(enum.IntEnum):
 
 
 class Counter(object):
-    # 线程安全计数器
-    def __init__(self, init_value) -> None:
-        self.current = RawValue("i", init_value)
-        self.lock = Lock()
+    def __init__(self, init_value=0) -> None:
+        self.current = init_value
 
     def increment(self):
-        with self.lock:
-            self.current.value += 1
+        self.current += 1
 
     def value(self):
-        with self.lock:
-            return self.current.value
+        return self.current
 
     def increment_get(self):
-        with self.lock:
-            self.current.value += 1
-            return self.current.value
+        self.current += 1
+        return self.current
 
-    def get_increment(self):
-        with self.lock:
-            yield self.current.value
-            self.current.value += 1
+
+class AsyncCounter:
+    def __init__(self) -> None:
+        self.current = 0
+        self.lock = asyncio.Lock()
+
+    async def increment(self):
+        async with self.lock:
+            self.current += 1
+
+    async def increment_get(self):
+        async with self.lock:
+            self.current += 1
+            return self.current
+
+    async def value(self):
+        async with self.lock:
+            return self.current
 
 
 PackageHeader = namedtuple(
