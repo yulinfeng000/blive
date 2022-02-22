@@ -1,19 +1,20 @@
 import sys
 import json
 import asyncio
-from typing import Awaitable, Dict, List, Tuple, Union
+from typing import Awaitable, Dict, List, Union
 import loguru
 import aiohttp
 from aiohttp.client_ws import ClientWebSocketResponse
 from aiohttp.http_websocket import WSMessage
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.util import _Undefined
+from requests.exceptions import ConnectionError
 
 from .core import (
+    PackageHeader,
     packman,
     Events,
     Operation,
-    PackageHeader,
     get_blive_room_info,
     get_blive_ws_url,
     certification,
@@ -24,13 +25,18 @@ from .core import (
 undefined = _Undefined()
 
 
+class ExitedException(Exception):
+    pass
+
+
 class BLiverCtx(object):
     def __init__(self, bliver, msg) -> None:
         super().__init__()
         self.ws: ClientWebSocketResponse = bliver.ws
-        self.msg: Tuple = msg  # 原始消息
+        self.msg = msg  # 原始消息
+        self.header: PackageHeader = msg[0]  # 消息头部
         self.bliver: BLiver = bliver
-        self.body: Dict = None  # 消息内容
+        self.body = json.loads(msg[1])
 
 
 class Channel:
@@ -55,19 +61,15 @@ class Processor:
     def __init__(self, logger=None) -> None:
         self.logger = logger or loguru.logger
         self.channels: Dict[str, Channel] = {}
-        for e in Events:
-            self.channels[e] = Channel()
 
     def register(self, channel: str, handler: Awaitable):
-        channel = self.channels[channel]
-        channel.register_handler(handler)
+        c = self.channels.get(channel, Channel())
+        c.register_handler(handler)
+        self.channels[channel] = c
 
     async def process(self, ctx):
-        header: PackageHeader = ctx.msg[0]
-        if header.operation == Operation.NOTIFY:
-            msg = json.loads(ctx.msg[1])
-            ctx.body = msg
-            listeners = self.channels.get(msg["cmd"], [])  # 根据cmd 得到相应的处理句柄
+        if ctx.header.operation == Operation.NOTIFY:
+            listeners = self.channels.get(ctx.body["cmd"], [])  # 根据cmd 得到相应的处理句柄
             return await asyncio.gather(*[f(ctx) for f in listeners])
 
 
@@ -84,6 +86,7 @@ class BLiver:
         self._ws: ClientWebSocketResponse = None
         self.scheduler = AsyncIOScheduler(timezone="Asia/ShangHai")
         self.processor = Processor(logger=self.logger)
+        self.aio_session = aiohttp.ClientSession()
 
     def on(self, event: Union[Events, List[Events]]):
         def f_wrapper(func):
@@ -143,32 +146,86 @@ class BLiver:
         return self._ws
 
     async def heartbeat(self):
-        assert self._ws is not None
-        await self._ws.send_bytes(packman.pack(heartbeat(), Operation.HEARTBEAT))
-        self.logger.debug("heartbeat sended")
+        try:
+            if self._ws is not None and not self._ws.closed:
+                await self._ws.send_bytes(
+                    packman.pack(heartbeat(), Operation.HEARTBEAT)
+                )
+                self.logger.debug("heartbeat sended")
+                return
+            else:
+                self.logger.warning(
+                    "heartbeat msg not send successfully, because ws had closed"
+                )
+        except (
+            aiohttp.ClientConnectionError,
+            asyncio.TimeoutError,
+            ConnectionResetError,
+        ):
+            self.logger.warning("send heartbeat error, will reconnect ws")
+            await self.connect()  # 重新连接
+
+    async def connect(self, retries=5):
+        for i in range(retries):
+            try:
+                url, token = get_blive_ws_url(self.real_roomid)
+                ws = await self.aio_session.ws_connect(url)
+                self._ws = ws
+                # 发送认证
+                await ws.send_bytes(
+                    packman.pack(certification(self.real_roomid, token), Operation.AUTH)
+                )
+                return
+            except (
+                aiohttp.ClientConnectionError,
+                asyncio.TimeoutError,
+                ConnectionError,
+            ):
+                self.logger.warning(
+                    "connect failed, will retry {}, current: {}", retries, i + 1
+                )
+                await asyncio.sleep(1)
+        self.logger.warning("reconnect fail")
 
     async def listen(self):
         # start listening
-        url, token = get_blive_ws_url(self.real_roomid)
-        async with aiohttp.ClientSession().ws_connect(url) as ws:
-            self._ws = ws
-            await ws.send_bytes(
-                packman.pack(certification(self.real_roomid, token), Operation.AUTH)
-            )
+        await self.connect()
 
-            # 开始30s发送心跳包的定时任务
-            self.scheduler.add_job(self.heartbeat, trigger="interval", seconds=30)
-            self.scheduler.start()
+        # 开始30s发送心跳包的定时任务
+        self.scheduler.add_job(self.heartbeat, trigger="interval", seconds=30)
+        self.scheduler.start()
 
-            # 开始监听
-            while True:
-                msg: WSMessage = await ws.receive()
+        # 开始监听
+        while True:
+            try:
+                msg: WSMessage = await self.ws.receive(timeout=60)
+                if msg.type in (
+                    aiohttp.WSMsgType.CLOSING,
+                    aiohttp.WSMsgType.CLOSED,
+                    aiohttp.WSMsgType.ERROR,
+                ):
+                    self.logger.warning("ws closed")
+                    await self.connect()  # reconnect
+                    continue
                 if msg.type != aiohttp.WSMsgType.BINARY:
                     continue
                 mq = packman.unpack(msg.data)
                 self.logger.debug("received msg:\n{}", mq)
                 tasks = [self.processor.process(BLiverCtx(self, m)) for m in mq]
                 await asyncio.gather(*tasks)
+            except (
+                aiohttp.ClientConnectionError,
+                ConnectionResetError,
+                asyncio.TimeoutError,
+            ):
+                self.logger.warning("ws conn will reconnect")
+                await self.connect()
+
+    async def graceful_close(self):
+        await self._ws.close()
+        await self.aio_session.close()
+        self.scheduler.shutdown()
+        self.running = False
 
     def run(self):
         loop = asyncio.get_event_loop()

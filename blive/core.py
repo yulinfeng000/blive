@@ -2,6 +2,7 @@ import asyncio
 from collections import namedtuple
 from multiprocessing import RawValue, Lock
 import json
+from random import randint, random
 import requests
 import struct
 import enum
@@ -15,17 +16,18 @@ def get_blive_ws_url(roomid, ssl=True, platform="pc", player="web"):
         params={"room_id": roomid, "platform": platform, "player": player},
     )
     data = resp.json()
-    url_obj = data["data"]["host_server_list"][1]
+    lens = len(data["data"]["host_server_list"])
+    url_obj = data["data"]["host_server_list"][randint(0, lens - 1)]
     if ssl:
-        url = f"ws://{url_obj['host']}:{url_obj['ws_port']}/sub"
-    else:
         url = f"wss://{url_obj['host']}:{url_obj['wss_port']}/sub"
+    else:
+        url = f"ws://{url_obj['host']}:{url_obj['ws_port']}/sub"
     return url, data["data"]["token"]
 
 
 def get_blive_room_info(roomid):
     """
-    得到b站直播间id,（短id不是真实的id）
+    得到b站直播间id,(短id不是真实的id)
 
     Return: true_room_id,up_name
     """
@@ -257,7 +259,7 @@ class Events(str, enum.Enum):
     ANCHOR_LOT_START = "ANCHOR_LOT_START"  # 开启天选
     ANCHOR_LOT_END = "ANCHOR_LOT_END"  # 天选结束
     ANCHOR_LOT_AWARD = "ANCHOR_LOT_AWARD"  # 天选结果推送
-    VOICE_JOIN_ROOM_COUNT_INFO = "VOICE_JOIN_ROOM_COUNT_INFO"  # 	申请连麦队列变化
+    VOICE_JOIN_ROOM_COUNT_INFO = "VOICE_JOIN_ROOM_COUNT_INFO"  # 申请连麦队列变化
     VOICE_JOIN_LIST = "VOICE_JOIN_LIST"  # 连麦申请、取消连麦申请
     VOICE_JOIN_STATUS = "VOICE_JOIN_STATUS"  # 开始连麦、结束连麦
     WARNING = "WARNING"  # 被警告，%text%可获取内容
@@ -266,7 +268,7 @@ class Events(str, enum.Enum):
     ROOM_ADMINS = "ROOM_ADMINS"  # 房管数量改变
     # 勋章升级，仅送礼物后触发，需设置中开启“监听勋章升级”。%medal_level%获取新等级（但用户当前勋章不一定是本直播间）
     MEDAL_UPGRADE = "MEDAL_UPGRADE"
-    STOP_LIVE_ROOM_LIST = "STOP_LIVE_ROOM_LIST"  # 停止直播的房间
+    STOP_LIVE_ROOM_LIST = "STOP_LIVE_ROOM_LIST"  # 停止直播的房间（这些房间会关闭ws连接）
     WIDGET_BANNER = "WIDGET_BANNER"  # 小部件横幅
     PK_BATTLE_PROCESS_NEW = "PK_BATTLE_PROCESS_NEW"  # 开始pk
     PK_BATTLE_PROCESS = "PK_BATTLE_PROCESS"  # pk
@@ -274,3 +276,4 @@ class Events(str, enum.Enum):
     HOT_RANK_CHANGED_V2 = "HOT_RANK_CHANGED_V2"  # 热门榜改变v2
     PK_BATTLE_SETTLE = "PK_BATTLE_SETTLE"  # pk结果
     PK_BATTLE_PRE_NEW = "PK_BATTLE_PRE_NEW"  # pk预创建
+    LIVE_INTERACTIVE_GAME = "LIVE_INTERACTIVE_GAME"  # 在线互动游戏 送礼物参与
