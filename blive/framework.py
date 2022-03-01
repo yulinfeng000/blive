@@ -11,8 +11,8 @@ from apscheduler.util import _Undefined
 from requests.exceptions import ConnectionError
 
 from .core import (
+    BWS_MsgPackage,
     PackageHeader,
-    packman,
     Events,
     Operation,
     get_blive_room_info,
@@ -84,6 +84,7 @@ class BLiver:
         else:
             self.logger = logger
         self._ws: ClientWebSocketResponse = None
+        self.packman = BWS_MsgPackage()
         self.scheduler = AsyncIOScheduler(timezone="Asia/ShangHai")
         self.processor = Processor(logger=self.logger)
         self.aio_session = aiohttp.ClientSession()
@@ -149,7 +150,7 @@ class BLiver:
         try:
             if self._ws is not None and not self._ws.closed:
                 await self._ws.send_bytes(
-                    packman.pack(heartbeat(), Operation.HEARTBEAT)
+                    self.packman.pack(heartbeat(), Operation.HEARTBEAT)
                 )
                 self.logger.debug("heartbeat sended")
                 return
@@ -173,7 +174,9 @@ class BLiver:
                 self._ws = ws
                 # 发送认证
                 await ws.send_bytes(
-                    packman.pack(certification(self.real_roomid, token), Operation.AUTH)
+                    self.packman.pack(
+                        certification(self.real_roomid, token), Operation.AUTH
+                    )
                 )
                 return
             except (
@@ -209,7 +212,7 @@ class BLiver:
                     continue
                 if msg.type != aiohttp.WSMsgType.BINARY:
                     continue
-                mq = packman.unpack(msg.data)
+                mq = self.packman.unpack(msg.data)
                 self.logger.debug("received msg:\n{}", mq)
                 tasks = [self.processor.process(BLiverCtx(self, m)) for m in mq]
                 await asyncio.gather(*tasks)

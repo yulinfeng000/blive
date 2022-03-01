@@ -37,7 +37,7 @@ async def listen_sc(ctx: BLiverCtx):
     msg = SuperChatMsg(ctx.body)
     print("sc 来了")
     print(
-        f"""\n感谢 {msg.sender['name']}({msg.sender['medal']['medal_name']}:{msg.sender['medal']['medal_level']})的价值{msg.price}的sc\n\n\t{msg.content}\n"""
+        f"\n感谢 {msg.sender['name']}({msg.sender['medal']['medal_name']}:{msg.sender['medal']['medal_level']})的价值 {msg.price} 的sc\n\n\t{msg.content}\n"
     )
 
 

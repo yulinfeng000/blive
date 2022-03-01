@@ -1,8 +1,7 @@
 import asyncio
 from collections import namedtuple
-from multiprocessing import RawValue, Lock
 import json
-from random import randint, random
+from random import randint
 import requests
 import struct
 import enum
