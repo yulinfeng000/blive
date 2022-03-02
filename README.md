@@ -106,7 +106,6 @@ packman = BWS_MsgPackage() # 实例化一个消息包处理器
 while True:
    data = ws.receive() # 当收到消息时
    msg = packman.unpack(data) # 使用packman解析消息,返回一个形如 [(header,body), (header,body), ... ] 数组
-   # 如果你想发送弹幕之类的消息，可以自行构建消息数据并使用packman.pack方法打包消息
    print(msg)
 ```
 
