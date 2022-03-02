@@ -74,8 +74,9 @@ class Processor:
 
 
 class BLiver:
-    def __init__(self, roomid, logger=None, log_level="INFO"):
+    def __init__(self, roomid, uid=0, logger=None, log_level="INFO"):
         self.roomid = roomid
+        self.uid = uid
         self.real_roomid, self.uname = get_blive_room_info(roomid)
         if not logger:
             self.logger = loguru.logger
@@ -175,7 +176,8 @@ class BLiver:
                 # 发送认证
                 await ws.send_bytes(
                     self.packman.pack(
-                        certification(self.real_roomid, token), Operation.AUTH
+                        certification(self.real_roomid, token, uid=self.uid),
+                        Operation.AUTH,
                     )
                 )
                 return
