@@ -109,6 +109,53 @@ while True:
    print(msg)
 ```
 
+## 与 fastapi (其他asyncio生态框架) 配合使用
+
+```python
+from fastapi import FastAPI
+from blive import BLiver,Events
+from blive.msg import DanMuMsg
+
+app = FastAPI()
+
+BLIVER_POOL = {}
+
+
+# 定义弹幕事件handler
+async def handler(ctx):
+   danmu = DanMuMsg(ctx.body)
+   print(
+      f'\n{danmu.sender.name} ({danmu.sender.medal.medal_name}:{danmu.sender.medal.medal_level}): "{danmu.content}"\n'
+   )
+
+def create_bliver(roomid):
+    b = BLiver(roomid)
+    b.register_handler(Events.DANMU_MSG,handler)
+    return b
+
+
+@app.get("/create")
+async def create_new_bliver(roomid:int):
+    room = BLIVER_POOL.get(roomid,None)
+    if not room:
+        b = create_bliver(roomid)
+        BLIVER_POOL[roomid] = b.run_as_task() # 启动监听
+    return {"msg":"创建一个新直播间弹幕监听成功"}
+
+
+@app.get("/del")
+async def rm_bliver(roomid:int):
+    room = BLIVER_POOL.get(roomid,None)
+    if room:
+        room.cancel()
+    return {"msg":"移除直播间弹幕监听成功"}
+
+
+@app.get("/show")
+async def show():
+    return list(BLIVER_POOL.keys())
+```
+
 ## 项目简介
 
 - blive 文件夹为框架代码
@@ -119,7 +166,12 @@ while True:
 
   - msg.py 为消息操作类代码
 
-- app.py , multi_room.py 为2个简单示例，分别是以框架运行和同时监听多个直播间的实现
+- app.py
+   以框架形式运行例子
+- multi_room.py
+   同时监听多个直播间的实现
+- with_fastapi.py
+   与fastapi 配合使用的例子
 
 ## TODO
 
