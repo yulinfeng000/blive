@@ -166,11 +166,13 @@ async def show():
 
   - msg.py 为消息操作类代码
 
-- app.py
+- example/app.py
    以框架形式运行例子
-- multi_room.py
+
+- example/multi_room.py
    同时监听多个直播间的实现
-- with_fastapi.py
+
+- example/with_fastapi.py
    与fastapi 配合使用的例子
 
 ## TODO
