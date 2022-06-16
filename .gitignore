@@ -5,3 +5,4 @@ dist
 build
 blive.egg-info
 test.py
+.DS_Store

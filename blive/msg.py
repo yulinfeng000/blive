@@ -7,6 +7,18 @@ from typing import List
 """
 
 
+def dict_chain_get(dic, chain, default=None):
+    if isinstance(chain, str):
+        chain = tuple(chain.split("."))
+
+    try:
+        for k in chain:
+            dic = dic[k]
+        return dic
+    except (TypeError, KeyError):
+        return default
+
+
 class DictObject:
     def __getitem__(self, idx):
         return getattr(self, idx)
@@ -45,6 +57,9 @@ class BaseMsg(ABC):
     def __repr__(self) -> str:
         return json.dumps(self.body)
 
+    def chain_get(self, key_chain, default=None):
+        return dict_chain_get(self.body, key_chain, default=default)
+
 
 class DanMuMsg(BaseMsg):
     def __init__(self, body) -> None:
@@ -56,14 +71,12 @@ class DanMuMsg(BaseMsg):
 
     @property
     def sender(self):
-        if not hasattr(self, "_sender"):
-            self._sender = Sender(
-                id=self.body["info"][2][0],
-                name=self.body["info"][2][1],
-                medal_name=self.body["info"][3][1] if self.body["info"][3] else "",
-                medal_level=self.body["info"][3][0] if self.body["info"][3] else 0,
-            )
-        return self._sender
+        return Sender(
+            id=self.body["info"][2][0],
+            name=self.body["info"][2][1],
+            medal_name=self.body["info"][3][1] if self.body["info"][3] else "",
+            medal_level=self.body["info"][3][0] if self.body["info"][3] else 0,
+        )
 
     @property
     def timestamp(self):
@@ -76,18 +89,16 @@ class InteractWordMsg(BaseMsg):
 
     @property
     def user(self):
-        if not hasattr(self, "_user"):
-            self._user = Sender(
-                id=self.body["data"]["uid"],
-                name=self.body["data"]["uname"],
-                medal_name=self.body["data"]["fans_medal"]["medal_name"],
-                medal_level=self.body["data"]["fans_medal"]["medal_level"],
-            )
-        return self._user
+        return Sender(
+            id=dict_chain_get(self.body, "data.uid"),
+            name=dict_chain_get(self.body, "data.uname"),
+            medal_name=dict_chain_get(self.body, "data.fans_medal.medal_name"),
+            medal_level=dict_chain_get(self.body, "data.fans_medal.medal_level"),
+        )
 
     @property
     def timestamp(self):
-        return self.body["data"]["timestamp"]
+        return dict_chain_get(self.body, "data.timestamp")
 
 
 class StopLiveRoomListMsg(BaseMsg):
@@ -96,7 +107,7 @@ class StopLiveRoomListMsg(BaseMsg):
 
     @property
     def room_id_list(self) -> List[int]:
-        return self.body["data"]["room_id_list"]
+        return dict_chain_get(self.body, "data.room_id_list")
 
 
 class HotRankChangeV2Msg(BaseMsg):
@@ -105,63 +116,60 @@ class HotRankChangeV2Msg(BaseMsg):
 
     @property
     def area_name(self):
-        return self.body["data"]["area_name"]
+        return dict_chain_get(self.body, "data.area_name")
 
     @property
     def rank_desc(self):
-        return self.body["data"]["rank_desc"]
+        return dict_chain_get(self.body, "data.rank_desc")
 
     @property
     def rank(self):
-        return self.body["data"]["rank"]
+        return dict_chain_get(self.body, "data.rank")
 
     @property
     def trend(self):
-        return self.body["data"]["trend"]
+        return dict_chain_get(self.body, "data.trend")
 
     @property
     def timestamp(self):
-        return self.body["data"]["timestamp"]
+        return dict_chain_get(self.body, "data.timestamp")
 
 
 class SendGiftMsg(BaseMsg):
     # TODO 礼物逻辑复杂, 考虑更复杂的封装类
     def __init__(self, body) -> None:
-
         super().__init__(body)
 
     @property
     def sender(self):
-        if not hasattr(self, "_sender"):
-            self._sender = Sender(
-                id=self.body["data"]["uid"],
-                name=self.body["data"]["uname"],
-                medal_name=self.body["data"]["medal_info"]["medal_name"],
-                medal_level=self.body["data"]["medal_info"]["medal_level"],
-            )
-        return self._sender
+        return Sender(
+            id=dict_chain_get(self.body, "data.uid"),
+            name=dict_chain_get(self.body, "data.uname"),
+            medal_name=dict_chain_get(self.body, "data.medal_info.medal_name"),
+            medal_level=dict_chain_get(self.body, "data.medal_info.medal_level"),
+        )
 
     @property
     def action(self):
-        return self.body["data"]["action"]
+        return dict_chain_get(self.body, "data.action")
 
     @property
     def gift(self):
         return {
-            "gift_id": self.body["data"]["giftId"],
-            "gift_name": self.body["data"]["giftName"],
-            "gift_type": self.body["data"]["giftType"],
+            "gift_id": dict_chain_get(self.body, "data.giftId"),
+            "gift_name": dict_chain_get(self.body, "data.giftName"),
+            "gift_type": dict_chain_get(self.body, "data.giftType"),
         }
 
     @property
     def combo(self):
         return {
-            "batch_combo_id": self.body["data"]["batch_combo_id"],
-            "batch_combo_send": self.body["data"]["batch_combo_send"],
-            "combo_resources_id": self.body["data"]["combo_resources_id"],
-            "combo_send": self.body["data"]["combo_send"],
-            "combo_stay_time": self.body["data"]["combo_stay_time"],
-            "combo_total_coin": self.body["data"]["combo_total_coin"],
+            "batch_combo_id": dict_chain_get(self.body, "data.batch_combo_id"),
+            "batch_combo_send": dict_chain_get(self.body, "data.batch_combo_send"),
+            "combo_resources_id": dict_chain_get(self.body, "data.combo_resources_id"),
+            "combo_send": dict_chain_get(self.body, "data.combo_send"),
+            "combo_stay_time": dict_chain_get(self.body, "data.combo_stay_time"),
+            "combo_total_coin": dict_chain_get(self.body, "data.combo_total_coin"),
         }
 
 
@@ -171,30 +179,28 @@ class SuperChatMsg(BaseMsg):
 
     @property
     def content(self):
-        return self.body["data"]["message"]
+        return dict_chain_get(self.body, "data.message")
 
     @property
     def sender(self):
-        if not hasattr(self, "_sender"):
-            self._sender = Sender(
-                id=self.body["data"]["user_info"]["uname"],
-                name=self.body["data"]["uid"],
-                medal_name=self.body["data"]["medal_info"]["medal_name"],
-                medal_level=self.body["data"]["medal_info"]["medal_level"],
-            )
-        return self._sender
+        return Sender(
+            id=dict_chain_get(self.body, "data.user_info.uname"),
+            name=dict_chain_get(self.body, "data.uid"),
+            medal_name=dict_chain_get(self.body, "data.medal_info.medal_name"),
+            medal_level=dict_chain_get(self.body, "data.medal_info.medal_level"),
+        )
 
     @property
     def price(self):
-        return self.body["data"]["price"]
+        return dict_chain_get(self.body, "data.price")
 
     @property
     def start_time(self):
-        return self.body["data"]["start_time"]
+        return dict_chain_get(self.body, "data.start_time")
 
     @property
     def time(self):
-        return self.body["data"]["time"]
+        return dict_chain_get(self.body, "data.time")
 
 
 class EntryEffectMsg(BaseMsg):
@@ -203,23 +209,23 @@ class EntryEffectMsg(BaseMsg):
 
     @property
     def uid(self):
-        return self.body["data"]["uid"]
+        return dict_chain_get(self.body, "data.uid")
 
     @property
     def face(self):
-        return self.body["data"]["face"]
+        return dict_chain_get(self.body, "data.face")
 
     @property
     def copy_writting(self):
-        return self.body["data"]["copy_writing"]
+        return dict_chain_get(self.body, "data.copy_writing")
 
     @property
     def web_basemap_url(self):
-        return self.body["data"]["web_basemap_url"]
+        return dict_chain_get(self.body, "data.web_basemap_url")
 
     @property
     def basemap_url(self):
-        return self.body["data"]["basemap_url"]
+        return dict_chain_get(self.body, "data.basemap_url")
 
 
 class LiveInteractiveGameMsg(BaseMsg):
@@ -228,36 +234,36 @@ class LiveInteractiveGameMsg(BaseMsg):
 
     @property
     def uid(self):
-        return self.body["data"]["uid"]
+        return dict_chain_get(self.body, "data.uid")
 
     @property
     def uname(self):
-        return self.body["data"]["uname"]
+        return dict_chain_get(self.body, "data.uname")
 
     @property
     def uface(self):
-        return self.body["data"]["uface"]
+        return dict_chain_get(self.body, "data.uface")
 
     @property
     def fans_medal_level(self):
-        return self.body["data"]["fans_medal_level"]
+        return dict_chain_get(self.body, "data.fans_medal_level")
 
     @property
     def guard_level(self):
-        return self.body["data"]["guard_level"]
+        return dict_chain_get(self.body, "data.guard_level")
 
     @property
     def gift(self):
         return {
-            "gift_id": self.body["data"]["gift_id"],
-            "gift_name": self.body["data"]["gift_name"],
-            "gift_num": self.body["data"]["gift_num"],
-            "price": self.body["data"]["price"],
-            "paid": self.body["data"]["paid"],
+            "gift_id": dict_chain_get(self.body, "data.gift_id"),
+            "gift_name": dict_chain_get(self.body, "data.gift_name"),
+            "gift_num": dict_chain_get(self.body, "data.gift_num"),
+            "price": dict_chain_get(self.body, "data.price"),
+            "paid": dict_chain_get(self.body, "data.paid"),
         }
 
     def timestamp(self):
-        return self.body["data"]["timestamp"]
+        return dict_chain_get(self.body, "data.timestamp")
 
 
 class OnlineRankCountMsg(BaseMsg):
@@ -266,4 +272,4 @@ class OnlineRankCountMsg(BaseMsg):
 
     @property
     def count(self):
-        return self.body["data"]["count"]
+        return dict_chain_get(self.body, "data.count")
