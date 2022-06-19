@@ -184,8 +184,8 @@ class SuperChatMsg(BaseMsg):
     @property
     def sender(self):
         return Sender(
-            id=dict_chain_get(self.body, "data.user_info.uname"),
-            name=dict_chain_get(self.body, "data.uid"),
+            id=dict_chain_get(self.body, "data.uid"),
+            name=dict_chain_get(self.body, "data.user_info.uname"),
             medal_name=dict_chain_get(self.body, "data.medal_info.medal_name"),
             medal_level=dict_chain_get(self.body, "data.medal_info.medal_level"),
         )
