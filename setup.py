@@ -5,7 +5,7 @@ with open("./README.md", "r") as f:
 
 setuptools.setup(
     name="blive",
-    version="0.0.7",
+    version="0.0.8",
     author="cam",
     author_email="yulinfeng000@gmail.com",
     long_description=description,
