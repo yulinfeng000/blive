@@ -9,7 +9,7 @@ from blive.msg import DanMuMsg
 async def listen(ctx: BLiverCtx):
     danmu = DanMuMsg(ctx.body)
     print(
-        f'\n{danmu.sender.name} ({danmu.sender.medal.medal_name}:{danmu.sender.medal.medal_level}): "{danmu.content}"\n'
+        f'\n【{ctx.bliver.uname}】{danmu.sender.name} ({danmu.sender.medal.medal_name}:{danmu.sender.medal.medal_level}): "{danmu.content}"\n'
     )
 
 

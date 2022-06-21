@@ -201,6 +201,19 @@ class SuperChatMsg(BaseMsg):
     @property
     def time(self):
         return dict_chain_get(self.body, "data.time")
+    
+    @property  # 头像
+    def avatar_url(self):
+        return dict_chain_get(self.body, "data.user_info.face")
+
+    @property
+    def anchor_uname(self):
+        return dict_chain_get(self.body, "data.medal_info.anchor_uname")
+
+    @property  # 背景色
+    def color(self):
+        return dict_chain_get(self.body, "data.background_bottom_color")
+
 
 
 class EntryEffectMsg(BaseMsg):

@@ -1,3 +1,4 @@
+from socket import gaierror
 import sys
 import json
 import asyncio
@@ -74,6 +75,25 @@ class Processor:
 
 
 class BLiver:
+    _global_catches = {}
+
+    def catch(self, err_type):
+        def _err_handler_wrapper(fn):
+            self.register_error_handler(err_type, fn)
+
+        return _err_handler_wrapper
+
+    @classmethod
+    def register_global_error_handler(cls, err_type, fn):
+        err_handlers = cls._global_catches.get(err_type, [])
+        err_handlers.append(fn)
+        cls._global_catches[err_type] = err_handlers
+
+    def register_error_handler(self, err_type, fn):
+        err_handlers = self._catches.get(err_type, [])
+        err_handlers.append(fn)
+        self._catches[err_type] = err_handlers
+
     def __init__(self, roomid, uid=0, logger=None, log_level="INFO"):
         self.roomid = roomid
         self.uid = uid
@@ -84,6 +104,7 @@ class BLiver:
             self.logger.add(sys.stderr, level=log_level)
         else:
             self.logger = logger
+        self._catches = {}  # to handle errors
         self._ws: ClientWebSocketResponse = None
         self.packman = BWS_MsgPackage()
         self.scheduler = AsyncIOScheduler(timezone="Asia/ShangHai")
@@ -162,6 +183,7 @@ class BLiver:
         except (
             aiohttp.ClientConnectionError,
             asyncio.TimeoutError,
+            ConnectionError,
             ConnectionResetError,
         ):
             self.logger.warning("send heartbeat error, will reconnect ws")
@@ -185,6 +207,7 @@ class BLiver:
                 aiohttp.ClientConnectionError,
                 asyncio.TimeoutError,
                 ConnectionError,
+                ConnectionResetError,
             ):
                 self.logger.warning(
                     "connect failed, will retry {}, current: {}", retries, i + 1
@@ -225,6 +248,12 @@ class BLiver:
             ):
                 self.logger.warning("ws conn will reconnect")
                 await self.connect()
+
+            # to handler errors
+            except tuple(self._catches.keys()) as e:
+                [eh(e,self) for eh in self._catches.get(type(e), [])]
+            except tuple(BLiver._global_catches.keys()) as e:
+                [eh(e,self) for eh in BLiver._global_catches.get(type(e), [])]
 
     async def graceful_close(self):
         await self._ws.close()
