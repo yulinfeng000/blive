@@ -45,6 +45,7 @@
    ```python
 
    from blive import  BLiver, Events, BLiverCtx
+   from blive.msg import DanMuMsg
 
    app = BLiver(123)
 
