@@ -27,6 +27,7 @@
 
    ```python
    from blive import  BLiver, Events, BLiverCtx
+   from blive.msg import DanMuMsg
 
    app = BLiver(123)
 
@@ -148,6 +149,7 @@ async def rm_bliver(roomid:int):
     room = BLIVER_POOL.get(roomid,None)
     if room:
         room.cancel()
+        BLIVER_POOL.pop(roomid)
     return {"msg":"移除直播间弹幕监听成功"}
 
 
