@@ -1,4 +1,3 @@
-import asyncio
 from collections import namedtuple
 import json
 from random import randint
@@ -95,40 +94,6 @@ class Operation(enum.IntEnum):
     AUTH_REPLY = 8  # 认证回应
 
 
-class Counter(object):
-    def __init__(self, init_value=0) -> None:
-        self.current = init_value
-
-    def increment(self):
-        self.current += 1
-
-    def value(self):
-        return self.current
-
-    def increment_get(self):
-        self.current += 1
-        return self.current
-
-
-class AsyncCounter:
-    def __init__(self) -> None:
-        self.current = 0
-        self.lock = asyncio.Lock()
-
-    async def increment(self):
-        async with self.lock:
-            self.current += 1
-
-    async def increment_get(self):
-        async with self.lock:
-            self.current += 1
-            return self.current
-
-    async def value(self):
-        async with self.lock:
-            return self.current
-
-
 PackageHeader = namedtuple(
     "PackageHeader",
     ["package_size", "header_size", "version", "operation", "sequence_id"],
@@ -137,11 +102,18 @@ PackageHeader = namedtuple(
 HeaderStruct = struct.Struct(">I2H2I")
 
 
-class BWS_MsgPackage:
+def counter(start=0):
+    while True:
+        start += 1
+        yield start
+
+
+
+class BLiveMsgPackage:
     """bilibili websocket message package"""
 
     def __init__(self) -> None:
-        self.sequence = Counter(0)
+        self.sequence = counter(0)
 
     def pack(self, data, operation, version=ProtocolVersion.NORMAL):
         body = json.dumps(data).encode("utf-8")
@@ -151,10 +123,35 @@ class BWS_MsgPackage:
                 header_size=HeaderStruct.size,
                 version=version,
                 operation=operation,
-                sequence_id=self.sequence.increment_get(),
+                sequence_id=next(self.sequence),
             )
         )
         return header + body
+
+    def zipped_notify_pkg_process(
+        self, packages: list, data
+    ):  # 解压后的包处理代码 ,抽取为公共函数, data: 解压后的原始数据
+        header = PackageHeader(*HeaderStruct.unpack(data[:16]))  # 读取包头
+        if len(data) > header.package_size:  # 如果数据大小大于包头声明的大小，说明是粘包
+            while True:
+                # 先把第一个包放进去 / 放入包
+                packages.append(
+                    (header, data[16 : header.package_size].decode("utf-8"))
+                )
+                # 移动到下一个包
+                data = data[header.package_size :]
+                # 读取下一个包的包头
+                header = PackageHeader(*HeaderStruct.unpack(data[:16]))
+                if len(data) > header.package_size:
+                    # 如果数据还大于声明的package_size，说明还有1个以上的包
+                    continue
+                else:
+                    # 剩下的数据刚好就是一个包,直接放，然后退出循环
+                    packages.append((header, data[16:].decode("utf-8")))  # 直接放第二个包
+                    break
+        else:
+            # 如果数据大小不大于包头声明的大小,说明是单个包太大压缩的。直接放入
+            packages.append((header, data[16:].decode("utf-8")))
 
     def unpack(self, data) -> list:
         packages = []  # 装处理好的数据包用
@@ -169,41 +166,16 @@ class BWS_MsgPackage:
         # 通知包处理
         elif header.operation == Operation.NOTIFY:
 
-            def zipped_notify_pkg_process(data):  # 解压后的包处理代码 ,抽取为公共函数, data: 解压后的原始数据
-                header = PackageHeader(*HeaderStruct.unpack(data[:16]))  # 读取包头
-                if len(data) > header.package_size:  # 如果数据大小大于包头声明的大小，说明是粘包
-                    while True:
-                        # 先把第一个包放进去 / 放入包
-                        packages.append(
-                            (header, data[16 : header.package_size].decode("utf-8"))
-                        )
-                        # 移动到下一个包
-                        data = data[header.package_size :]
-                        # 读取下一个包的包头
-                        header = PackageHeader(*HeaderStruct.unpack(data[:16]))
-                        if len(data) > header.package_size:
-                            # 如果数据还大于声明的package_size，说明还有1个以上的包
-                            continue
-                        else:
-                            # 剩下的数据刚好就是一个包,直接放，然后退出循环
-                            packages.append(
-                                (header, data[16:].decode("utf-8"))
-                            )  # 直接放第二个包
-                            break
-                else:
-                    # 如果数据大小不大于包头声明的大小,说明是单个包太大压缩的。直接放入
-                    packages.append((header, data[16:].decode("utf-8")))
-
             # NOTIFY 消息可能会粘包
             if header.version == ProtocolVersion.DEFLATE:
                 # 先zlib解码，拆包
                 data = zlib.decompress(data)
-                zipped_notify_pkg_process(data)
+                self.zipped_notify_pkg_process(packages, data)
 
             elif header.version == ProtocolVersion.BROTLI:
                 # 与 zlib 逻辑相同，先解码，然后数据可能要拆包
                 data = brotli.decompress(data)
-                zipped_notify_pkg_process(data)
+                self.zipped_notify_pkg_process(packages, data)
 
             elif header.version == ProtocolVersion.NORMAL:
                 # normal 直接decode
@@ -218,7 +190,7 @@ class BWS_MsgPackage:
         return packages
 
 
-packman = BWS_MsgPackage()
+packman = BLiveMsgPackage()
 
 
 class Events(str, enum.Enum):
@@ -242,8 +214,9 @@ class Events(str, enum.Enum):
     ROOM_BLOCK_MSG = "ROOM_BLOCK_MSG"  # 用户被禁言，%uname%昵称
     GUARD_BUY = "GUARD_BUY"  # 有人上船
     FIRST_GUARD = "FIRST_GUARD"  # 用户初次上船
-    # 船员数量改变事件，%uname%新船员昵称，%num%获取大航海数量，附带直播间信息json数据
-    NEW_GUARD_COUNT = "NEW_GUARD_COUNT"
+    NEW_GUARD_COUNT = (
+        "NEW_GUARD_COUNT"  # 船员数量改变事件，%uname%新船员昵称，%num%获取大航海数量，附带直播间信息json数据
+    )
     USER_TOAST_MSG = "USER_TOAST_MSG"  # 上船附带的通知
     HOT_RANK_CHANGED = "HOT_RANK_CHANGED"  # 热门榜排名改变
     HOT_RANK_SETTLEMENT = "HOT_RANK_SETTLEMENT"  # 荣登热门榜topX
@@ -265,8 +238,7 @@ class Events(str, enum.Enum):
     CUT_OFF = "CUT_OFF"  # 被超管切断
     room_admin_entrance = "room_admin_entrance"  # 设置房管
     ROOM_ADMINS = "ROOM_ADMINS"  # 房管数量改变
-    # 勋章升级，仅送礼物后触发，需设置中开启“监听勋章升级”。%medal_level%获取新等级（但用户当前勋章不一定是本直播间）
-    MEDAL_UPGRADE = "MEDAL_UPGRADE"
+    MEDAL_UPGRADE = "MEDAL_UPGRADE"  # 勋章升级，仅送礼物后触发，需设置中开启“监听勋章升级”。%medal_level%获取新等级（但用户当前勋章不一定是本直播间）
     STOP_LIVE_ROOM_LIST = "STOP_LIVE_ROOM_LIST"  # 停止直播的房间（这些房间会关闭ws连接）
     WIDGET_BANNER = "WIDGET_BANNER"  # 小部件横幅
     PK_BATTLE_PROCESS_NEW = "PK_BATTLE_PROCESS_NEW"  # 开始pk

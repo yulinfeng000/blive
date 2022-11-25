@@ -159,33 +159,13 @@ async def show():
     return list(BLIVER_POOL.keys())
 ```
 
-
-## 全局异常处理
-
-全局异常处理分为两个共享级别,分别为类级别和实例级别，在类上注册的异常处理为所有类实例共享，实例级别的异常处理只有实例自身拥有
-
-```python
-
-app = BLiver(510)
-
-@app.catch(ZeroDivisionError)
-def err_handler(e, app: BLiver):
-    print(f"{app.uname} catch ZeroDivisionError", e)
-   
-@app.on(Events.DANMU_MSG)
-async def danmu_handler(ctx):
-   1 / 0 # will raise ZeroDivisionError
-
-azi.run()
-```
-
 ## 项目简介
 
 - blive 文件夹为框架代码
 
   - core.py 为B站ws直播聊天室协议包处理的核心代码
 
-  - framework.py 为框架代码
+  - eeframework.py 为框架代码
 
   - msg.py 为消息操作类代码
 

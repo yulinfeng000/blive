@@ -1,4 +1,3 @@
-from socket import gaierror
 import sys
 import json
 import asyncio
