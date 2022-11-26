@@ -1,3 +1,4 @@
+import uvicorn
 from fastapi import FastAPI
 from blive import BLiver, Events
 from blive.msg import DanMuMsg
@@ -41,3 +42,7 @@ async def rm_bliver(roomid: int):
 @app.get("/show")
 async def show():
     return list(BLIVER_POOL.keys())
+
+
+if __name__ == "__main__":
+    uvicorn.run(app)

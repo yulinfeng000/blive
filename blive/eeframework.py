@@ -87,7 +87,7 @@ class BLiver(AsyncIOEventEmitter):
         self.scheduler.start()
 
         # 开始监听
-        while True:
+        while self.running:
             try:
                 msg = await self.ws.receive(timeout=60)
                 if msg.type in (
@@ -95,8 +95,9 @@ class BLiver(AsyncIOEventEmitter):
                     aiohttp.WSMsgType.CLOSED,
                     aiohttp.WSMsgType.ERROR,
                 ):
-                    await self.connect()  # reconnect
-                    continue
+                    if self.running:
+                        await self.connect()  # reconnect
+                        continue
                 if msg.type != aiohttp.WSMsgType.BINARY:
                     continue
                 mq = self.packman.unpack(msg.data)
@@ -112,10 +113,11 @@ class BLiver(AsyncIOEventEmitter):
                 await self.connect()
 
     async def graceful_close(self):
-        self.scheduler.shutdown()
-        await self._ws.close()
-        await self.aio_session.close()
         self.running = False
+        self.scheduler.shutdown()
+        await self.aio_session.close()
+        await self.ws.close()
+        
 
     def run(self):
         loop = asyncio.get_event_loop()

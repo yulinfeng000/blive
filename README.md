@@ -178,8 +178,6 @@ async def show():
 - example/with_fastapi.py
    与fastapi 配合使用的例子
 
-- example/error_handler.py
-   错误处理的例子
 
 ## TODO
 
