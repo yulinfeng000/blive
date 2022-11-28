@@ -16,5 +16,5 @@ setuptools.setup(
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",
     ],
-    install_requires=["aiohttp","requests","APScheduler","brotli","pyee"]
+    install_requires=["aiohttp","requests","APScheduler==3.9.1","brotli","pyee"]
 )

@@ -25,11 +25,11 @@ async def main():
     hai7 = BLiver(21452505)
     azi = BLiver(510)
 
-    azi.register_handler(Events.DANMU_MSG, listen)
-    azi.register_handler(Events.INTERACT_WORD, listen_join)
+    azi.on(Events.DANMU_MSG, listen)
+    azi.on(Events.INTERACT_WORD, listen_join)
         # 注册handler
-    hai7.register_handler(Events.DANMU_MSG, listen)
-    hai7.register_handler(Events.INTERACT_WORD, listen_join)
+    hai7.on(Events.DANMU_MSG, listen)
+    hai7.on(Events.INTERACT_WORD, listen_join)
 
     # 以异步task的形式运行
     task1 = hai7.run_as_task()

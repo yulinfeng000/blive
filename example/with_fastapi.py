@@ -17,7 +17,7 @@ def create_bliver(roomid):
         )
 
     b = BLiver(roomid)
-    b.register_handler(Events.DANMU_MSG, listen)
+    b.on(Events.DANMU_MSG, listen)
     return b
 
 

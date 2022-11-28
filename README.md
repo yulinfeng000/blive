@@ -82,8 +82,8 @@ async def main():
    azi = BLiver(510)
 
    # 注册handler
-   ke.register_handler(Events.DANMU_MSG, listen)
-   azi.register_handler(Events.DANMU_MSG, listen)
+   ke.on(Events.DANMU_MSG, listen)
+   azi.on(Events.DANMU_MSG, listen)
 
    # 以异步task的形式运行
    task1 = ke.run_as_task()
@@ -132,7 +132,7 @@ async def handler(ctx):
 
 def create_bliver(roomid):
     b = BLiver(roomid)
-    b.register_handler(Events.DANMU_MSG,handler)
+    b.on(Events.DANMU_MSG,handler)
     return b
 
 
