@@ -1,3 +1,4 @@
+import warnings
 import json
 import asyncio
 from typing import List, Union
@@ -38,6 +39,7 @@ class BLiver(AsyncIOEventEmitter):
         self.aio_session = aiohttp.ClientSession()
 
     def register_handler(self, event: Union[Events, List[Events]], handler):
+        warnings.warn("`register_handler` is deprecated function please use `on`",DeprecationWarning)
         self.on(event, handler)
 
     async def heartbeat(self):
