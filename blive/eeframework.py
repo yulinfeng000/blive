@@ -30,13 +30,15 @@ class BLiver(AsyncIOEventEmitter):
     def __init__(self, room_id, uid=0):
         super().__init__()
         self.running = False
-        self.ws = None
+        
         self.room_id = room_id
         self.uid = uid
         self.real_room_id, self.uname = get_blive_room_info(room_id)
         self.packman = BLiveMsgPackage()
         self.scheduler = AsyncIOScheduler(timezone="Asia/ShangHai")
-        self.aio_session = aiohttp.ClientSession()
+
+        self.ws = None
+        self.aio_session = None
 
     def register_handler(self, event: Union[Events, List[Events]], handler):
         warnings.warn("`register_handler` is deprecated function please use `on`",DeprecationWarning)
@@ -61,6 +63,8 @@ class BLiver(AsyncIOEventEmitter):
         for _ in range(retries):
             try:
                 url, token = get_blive_ws_url(self.real_room_id)
+                if not self.aio_session:
+                    self.aio_session = aiohttp.ClientSession()
                 self.ws = await self.aio_session.ws_connect(url)
                 # 发送认证
                 await self.ws.send_bytes(
