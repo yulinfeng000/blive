@@ -1,13 +1,13 @@
 [tool.poetry]
 name = "blive"
-version = "0.2.3"
+version = "0.2.4"
 description = ""
 authors = ["Cam <yulinfeng000@gmail.com>"]
 license = "MIT"
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "^3.10"
+python = "^3.7"
 aiohttp = "^3.8.3"
 pyee = "^9.0.4"
 APScheduler = "^3.9.1.post1"
