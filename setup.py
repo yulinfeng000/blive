@@ -5,7 +5,7 @@ with open("./README.md", "r") as f:
 
 setuptools.setup(
     name="blive",
-    version="0.1.1",
+    version="0.1.2",
     author="cam",
     author_email="yulinfeng000@gmail.com",
     long_description=description,
@@ -16,5 +16,5 @@ setuptools.setup(
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",
     ],
-    install_requires=["aiohttp","requests","APScheduler==3.9.1","brotli","pyee"]
+    install_requires=["aiohttp","requests","APScheduler>=3.9.1","brotli","pyee"]
 )

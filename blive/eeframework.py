@@ -33,12 +33,13 @@ class BLiver(AsyncIOEventEmitter):
     def __init__(self, room_id, uid=0):
         super().__init__()
         self.running = False
-        self.ws = None
+        
         self.room_id = room_id
         self.uid = uid
         self.aio_session = aiohttp.ClientSession()
         self.packman = BLiveMsgPackage()
         self.scheduler = AsyncIOScheduler(timezone="Asia/ShangHai")
+        self.aio_session = aiohttp.ClientSession()
 
     def register_handler(self, event: Union[Events, List[Events]], handler):
         warnings.warn(
