@@ -22,7 +22,7 @@ async def listen_join(ctx: BLiverCtx):
 
 async def main():
     # 两个直播间
-    hai7 = BLiver(21452505)
+    hai7 = BLiver(7777)
     azi = BLiver(510)
 
     azi.on(Events.DANMU_MSG, listen)
@@ -36,9 +36,8 @@ async def main():
     task2 = azi.run_as_task()
 
     # await 两个任务
-    await asyncio.gather(*[task1, task2])
+    await asyncio.gather(task1, task2)
 
 
 if __name__ == "__main__":
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(main())
+    asyncio.run(main())

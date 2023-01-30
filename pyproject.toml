@@ -1,0 +1,20 @@
+[tool.poetry]
+name = "blive"
+version = "0.2.2"
+description = ""
+authors = ["Cam <yulinfeng000@gmail.com>"]
+license = "MIT"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+aiohttp = "^3.8.3"
+pyee = "^9.0.4"
+APScheduler = "^3.9.1.post1"
+aiodns = "^3.0.0"
+brotli = "^1.0.9"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

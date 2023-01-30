@@ -1,60 +1,43 @@
 from collections import namedtuple
 import json
 from random import randint
-import requests
 import struct
 import enum
 import brotli
 import zlib
+from aiohttp import ClientSession
 
 
-def get_blive_ws_url(roomid, ssl=True, platform="pc", player="web"):
-    resp = requests.get(
+async def get_blive_ws_url(roomid,aio_session:ClientSession,ssl=True, platform="pc", player="web"):
+    async with aio_session.get(
         f"https://api.live.bilibili.com/room/v1/Danmu/getConf",
         params={"room_id": roomid, "platform": platform, "player": player},
-    )
-    data = resp.json()
-    lens = len(data["data"]["host_server_list"])
-    url_obj = data["data"]["host_server_list"][randint(0, lens - 1)]
-    if ssl:
-        url = f"wss://{url_obj['host']}:{url_obj['wss_port']}/sub"
-    else:
-        url = f"ws://{url_obj['host']}:{url_obj['ws_port']}/sub"
-    return url, data["data"]["token"]
+    ) as resp:
+        data = await resp.json()
+        lens = len(data["data"]["host_server_list"])
+        url_obj = data["data"]["host_server_list"][randint(0, lens - 1)]
+        if ssl:
+            url = f"wss://{url_obj['host']}:{url_obj['wss_port']}/sub"
+        else:
+            url = f"ws://{url_obj['host']}:{url_obj['ws_port']}/sub"
+        return url, data["data"]["token"]
 
 
-def get_blive_room_info(roomid):
+async def get_blive_room_info(roomid,aio_session:ClientSession):
     """
     得到b站直播间id,(短id不是真实的id)
 
     Return: true_room_id,up_name
     """
-    resp = requests.get(
+    async with aio_session.get(
         "https://api.live.bilibili.com/xlive/web-room/v1/index/getInfoByRoom",
         params={"room_id": roomid},
-    )
-    data = resp.json()
-    return (
-        data["data"]["room_info"]["room_id"],
-        data["data"]["anchor_info"]["base_info"]["uname"],
-    )
-
-
-def get_blive_dm_history(roomid):
-    resp = requests.post(
-        "https://api.live.bilibili.com/xlive/web-room/v1/dM/gethistory",
-        headers={
-            "Host": "api.live.bilibili.com",
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:78.0) Gecko/20100101 Firefox/78.0",
-        },
-        data={
-            "roomid": roomid,
-            "csrf_token": "",
-            "csrf": "",
-            "visit_id": "",
-        },
-    )
-    return resp.json()
+    ) as resp:
+        data = await resp.json()
+        return (
+            data["data"]["room_info"]["room_id"],
+            data["data"]["anchor_info"]["base_info"]["uname"],
+        )
 
 
 def certification(roomid, token, uid=0, protover=1, platform="web"):
@@ -102,10 +85,11 @@ PackageHeader = namedtuple(
 HeaderStruct = struct.Struct(">I2H2I")
 
 
-def counter(start=0):
+def counter(start=1):
     while True:
-        start += 1
         yield start
+        start += 1
+       
 
 
 

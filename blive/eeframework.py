@@ -4,7 +4,6 @@ import asyncio
 from typing import List, Union
 import aiohttp
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from requests.exceptions import ConnectionError
 from pyee import AsyncIOEventEmitter
 from .core import (
     BLiveMsgPackage,
@@ -22,24 +21,30 @@ class BLiverCtx:
     def __init__(self, bliver, msg) -> None:
         self.ws = bliver.ws
         self.bliver: BLiver = bliver
-        self.msg:tuple[PackageHeader,dict] = msg  # 原始消息
+        self.msg: tuple[PackageHeader, dict] = msg  # 原始消息
         self.header: PackageHeader = self.msg[0]  # 消息头部
-        self.body:dict = json.loads(msg[1])
+        self.body: dict = json.loads(msg[1])
+
 
 class BLiver(AsyncIOEventEmitter):
+    real_room_id: Union[None, int]
+    uname: Union[None, str]
+
     def __init__(self, room_id, uid=0):
         super().__init__()
         self.running = False
         self.ws = None
         self.room_id = room_id
         self.uid = uid
-        self.real_room_id, self.uname = get_blive_room_info(room_id)
+        self.aio_session = aiohttp.ClientSession()
         self.packman = BLiveMsgPackage()
         self.scheduler = AsyncIOScheduler(timezone="Asia/ShangHai")
-        self.aio_session = aiohttp.ClientSession()
 
     def register_handler(self, event: Union[Events, List[Events]], handler):
-        warnings.warn("`register_handler` is deprecated function please use `on`",DeprecationWarning)
+        warnings.warn(
+            "`register_handler` is deprecated function please use `on`",
+            DeprecationWarning,
+        )
         self.on(event, handler)
 
     async def heartbeat(self):
@@ -60,7 +65,11 @@ class BLiver(AsyncIOEventEmitter):
     async def connect(self, retries=5):
         for _ in range(retries):
             try:
-                url, token = get_blive_ws_url(self.real_room_id)
+                if not hasattr(self,"real_room_id") or not hasattr(self,"uname"):
+                    self.real_room_id, self.uname = await get_blive_room_info(
+                        self.room_id, self.aio_session
+                    )
+                url, token = await get_blive_ws_url(self.real_room_id, self.aio_session)
                 self.ws = await self.aio_session.ws_connect(url)
                 # 发送认证
                 await self.ws.send_bytes(
@@ -78,7 +87,7 @@ class BLiver(AsyncIOEventEmitter):
             ):
                 await asyncio.sleep(1)
         raise aiohttp.ClientConnectionError("与服务器连接失败")
-    
+
     async def listen(self):
         self.running = True
         # start listening
@@ -100,13 +109,14 @@ class BLiver(AsyncIOEventEmitter):
                     if self.running:
                         await self.connect()  # reconnect
                         continue
+                    else:
+                        return 0
                 if msg.type != aiohttp.WSMsgType.BINARY:
                     continue
                 mq = self.packman.unpack(msg.data)
-                ctxs = [BLiverCtx(self, m) for m in mq]
-                ctxs = filter(lambda ctx:ctx.body.get("cmd",None), ctxs)
+                ctxs = filter(lambda ctx: ctx.body.get("cmd", None), [BLiverCtx(self, m) for m in mq])
                 for ctx in ctxs:
-                    self.emit(ctx.body["cmd"],ctx)
+                    self.emit(ctx.body["cmd"], ctx)
             except (
                 aiohttp.ClientConnectionError,
                 ConnectionResetError,
@@ -119,7 +129,6 @@ class BLiver(AsyncIOEventEmitter):
         self.scheduler.shutdown()
         await self.aio_session.close()
         await self.ws.close()
-        
 
     def run(self):
         loop = asyncio.get_event_loop()
