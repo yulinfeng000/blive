@@ -144,8 +144,10 @@ class BLiveMsgPackage:
 
         # 心跳包处理
         if header.operation == Operation.HEARTBEAT_REPLY:
-            # 心跳不会粘包,前4位有不明含义的数据
-            packages.append((header, data[4:].decode("utf-8")))
+            popularity = struct.unpack("!I", data[:4])[0]
+            payload = data[4:].decode("utf-8")
+            plain_text = "{"+"\"cmd\":\"HEARTBEAT_REPLY\",\"popularity\":{},\"payload\":{}".format(popularity,payload)+"}"
+            packages.append((header, plain_text))
 
         # 通知包处理
         elif header.operation == Operation.NOTIFY:
@@ -178,6 +180,7 @@ packman = BLiveMsgPackage()
 
 
 class Events(str, enum.Enum):
+    HEARTBEAT_REPLY="HEARTBEAT_REPLY" # 心跳包回复,带有当前主播的人气值
     LIVE = "LIVE"  # 主播开播
     PREPARING = "PREPARING"  # 下播【结束语】
     ROOM_CHANGE = "ROOM_CHANGE"  # 房间信息改变

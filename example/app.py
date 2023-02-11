@@ -20,6 +20,9 @@ async def listen(ctx: BLiverCtx):
         f'[弹幕] {danmu.sender.name} ({danmu.sender.medal.medal_name}:{danmu.sender.medal.medal_level}): "{danmu.content}"\n'
     )
 
+@app.on(Events.HEARTBEAT_REPLY)
+async def liver_popularity(ctx: BLiverCtx):
+    print(ctx.body['popularity'])
 
 @app.on(Events.INTERACT_WORD)
 async def listen_join(ctx: BLiverCtx):
